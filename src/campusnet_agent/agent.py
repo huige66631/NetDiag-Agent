@@ -39,7 +39,7 @@ def build_agent_trace(
                 f"tracert：{'开启' if plan.include_trace else '关闭'}；"
                 f"短时监控建议：{'是' if plan.monitor_recommended else '否'}。"
             ),
-            next_decision="开始采集当前设备和校园网环境下的真实数据。",
+            next_decision="开始采集当前设备和当前网络环境下的真实数据。",
         ),
     ]
 
@@ -97,7 +97,7 @@ def build_agent_trace(
         AgentTraceStep(
             step=len(steps) + 1,
             phase="生成报告",
-            action="调用 DeepSeek，将结构化证据转成面向学生和网络中心的报告。",
+            action="调用 DeepSeek，将结构化证据转成面向用户和网络管理员的报告。",
             observation="大模型只基于已采集数据解释，不编造未执行的测试。",
             next_decision="输出最终建议，并提示还需要补充的证据。",
         )
@@ -116,4 +116,3 @@ def trace_to_rows(steps: list[AgentTraceStep]) -> list[dict[str, object]]:
         }
         for step in steps
     ]
-

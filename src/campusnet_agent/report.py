@@ -9,7 +9,7 @@ from campusnet_agent.models import NetworkSnapshot
 def render_markdown(snapshot: NetworkSnapshot) -> str:
     diagnosis = snapshot.diagnosis
     lines = [
-        "# 校园网诊断报告",
+        "# 网络诊断报告",
         "",
         f"- 生成时间：{snapshot.created_at.strftime('%Y-%m-%d %H:%M:%S')}",
         f"- 默认网关：{snapshot.gateway or '未识别'}",
@@ -53,4 +53,3 @@ def save_report(snapshot: NetworkSnapshot, output_dir: str | Path = "reports") -
     md_path.write_text(render_markdown(snapshot), encoding="utf-8")
     json_path.write_text(json.dumps(snapshot.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
     return md_path, json_path
-

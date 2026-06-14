@@ -50,7 +50,7 @@ st.markdown(
     """
     <div class="hero">
       <h1>CampusNet Agent</h1>
-      <p>面向宿舍和校园网场景的本地诊断 Agent：自动选择工具，采集真实网络数据，并用 DeepSeek 生成可解释报告。</p>
+      <p>面向本地网络问题的诊断 Agent：自动选择工具，采集真实网络数据，并用 DeepSeek 生成可解释报告。</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -60,7 +60,7 @@ with st.sidebar:
     st.header("诊断任务")
     user_context = st.text_area(
         "你的网络现象",
-        placeholder="例如：宿舍晚上打游戏卡，但刷网页还行",
+        placeholder="例如：晚上打游戏卡，但刷网页还行；或者只有某个网站很慢",
         height=110,
     )
     mode_label = st.selectbox(

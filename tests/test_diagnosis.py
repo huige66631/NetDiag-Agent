@@ -24,5 +24,4 @@ def test_gateway_problem_has_wifi_suggestion():
     result = diagnose(snapshot)
 
     assert result.severity == "high"
-    assert "接入点" in result.summary
-
+    assert "网关" in result.summary

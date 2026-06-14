@@ -9,7 +9,7 @@ from campusnet_agent.report import render_markdown, save_report
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Campus network diagnosis assistant")
+    parser = argparse.ArgumentParser(description="Local network diagnosis assistant")
     subparsers = parser.add_subparsers(dest="command")
 
     diagnose_cmd = subparsers.add_parser("diagnose", help="Run one network diagnosis")

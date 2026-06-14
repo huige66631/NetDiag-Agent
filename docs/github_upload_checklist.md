@@ -12,6 +12,5 @@ Before pushing:
 ```powershell
 pytest
 git status
-rg "sk-" .
+rg "sk-" . -g "!.env.local"
 ```
-

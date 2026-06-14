@@ -1,7 +1,7 @@
 [project]
 name = "campusnet-agent"
 version = "0.1.0"
-description = "Campus network latency diagnosis and reporting assistant."
+description = "Local network latency diagnosis and reporting assistant."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

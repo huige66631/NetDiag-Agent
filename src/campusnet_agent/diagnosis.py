@@ -38,10 +38,10 @@ def diagnose(snapshot: NetworkSnapshot) -> Diagnosis:
     dns_slow = any((item.elapsed_ms or 0) > 800 or not item.success for item in snapshot.dns.values())
 
     if gateway_bad:
-        causes.append("本机到校园网接入点链路异常，可能是 Wi-Fi 信号弱、宿舍 AP 拥塞或本机网卡问题。")
+        causes.append("本机到网关的接入链路异常，可能是 Wi-Fi 信号弱、路由器/AP 拥塞、网线或本机网卡问题。")
         suggestions.extend(
             [
-                "靠近路由器/AP 或切换到信号更强的校园网热点后复测。",
+                "靠近路由器/AP，切换到信号更强的 Wi-Fi，或改用有线网络后复测。",
                 "如果可用，优先用有线网络对比测试，排除无线链路问题。",
                 "关闭代理、加速器、热点共享等可能影响路由的程序后复测。",
             ]
@@ -50,21 +50,21 @@ def diagnose(snapshot: NetworkSnapshot) -> Diagnosis:
         causes.append("DNS 解析异常，表现为 IP 连通性还可以，但域名访问慢或失败。")
         suggestions.extend(
             [
-                "临时切换 DNS 到 223.5.5.5、119.29.29.29 或学校推荐 DNS 后复测。",
-                "记录当前 DNS 服务器和解析耗时，作为反馈给网络中心的证据。",
+                "临时切换 DNS 到 223.5.5.5、119.29.29.29 或运营商推荐 DNS 后复测。",
+                "记录当前 DNS 服务器和解析耗时，作为反馈给网络管理员或运营商的证据。",
             ]
         )
     elif public_bad and external_bad_count >= 1:
-        causes.append("校园网出口或上游链路可能拥塞，尤其适合晚高峰访问外网慢的场景。")
+        causes.append("当前网络出口或上游链路可能拥塞，尤其适合晚高峰访问外网慢的场景。")
         suggestions.extend(
             [
                 "在非高峰时段和晚高峰各运行一次诊断，对比延迟和丢包变化。",
-                "用手机热点做对照测试，如果热点正常，问题更可能在校园网出口侧。",
-                "把报告中的网关正常、公网异常证据反馈给学校网络中心。",
+                "用手机热点或另一条网络做对照测试，如果对照网络正常，问题更可能在当前网络出口侧。",
+                "把报告中的网关正常、公网异常证据反馈给网络管理员或运营商。",
             ]
         )
     elif external_bad_count == 1:
-        causes.append("问题可能集中在某个目标网站或其 CDN/路由路径，而不是整个校园网。")
+        causes.append("问题可能集中在某个目标网站、服务端、CDN 或路由路径，而不是整个本地网络。")
         suggestions.extend(
             [
                 "更换同类网站测试，例如视频站、搜索站、游戏平台分别测一次。",
@@ -72,7 +72,7 @@ def diagnose(snapshot: NetworkSnapshot) -> Diagnosis:
             ]
         )
     else:
-        causes.append("当前基础连通性正常，没有发现明显校园网侧异常。")
+        causes.append("当前基础连通性正常，没有发现明显网络侧异常。")
         suggestions.extend(
             [
                 "如果体感仍然卡，建议开启 5-10 分钟周期监控，观察抖动和间歇性丢包。",
@@ -92,4 +92,3 @@ def diagnose(snapshot: NetworkSnapshot) -> Diagnosis:
     )
     snapshot.diagnosis = diagnosis
     return diagnosis
-

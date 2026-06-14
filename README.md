@@ -1,18 +1,18 @@
 # CampusNet Agent
 
-CampusNet Agent is a local AI agent for diagnosing campus network lag. It collects real
+CampusNet Agent is a local AI agent for diagnosing everyday network problems. It collects real
 network evidence from the current computer, chooses a diagnosis workflow based on the user's
 symptom, and uses DeepSeek to generate a readable troubleshooting report.
 
-The project is designed for student-side scenarios such as dorm Wi-Fi lag, gaming latency,
-slow DNS resolution, single-site slowness, and evening congestion.
+The project works for dorm Wi-Fi, home networks, office networks, gaming latency, slow DNS
+resolution, single-site slowness, and evening congestion.
 
 ## Why Local
 
-Campus network diagnosis must run on the user's own device and network. If the app is moved
-entirely to a cloud server, it will diagnose the cloud server's network instead of the dorm or
-campus network. This project therefore runs locally and uses the LLM only for analysis and
-report generation.
+Network diagnosis must run on the user's own device and current network. If the app is moved
+entirely to a cloud server, it will diagnose the cloud server's network instead of the user's
+Wi-Fi, router, DNS, or ISP path. This project therefore runs locally and uses the LLM only for
+analysis and report generation.
 
 ## Features
 
@@ -22,7 +22,7 @@ report generation.
   decisions
 - Local network probing with `ping`, `ipconfig`, `nslookup`, and optional `tracert`
 - Structured metrics: gateway, DNS servers, average latency, packet loss, DNS resolution time
-- Rule-based diagnosis for access-link issues, DNS issues, campus出口 congestion, and
+- Rule-based diagnosis for access-link issues, DNS issues, network出口 congestion, and
   target-side/CDN problems
 - Short monitoring mode to capture intermittent packet loss and jitter
 - DeepSeek-powered Agent report with evidence, suggestions, and a network-center feedback draft
@@ -93,7 +93,7 @@ http://localhost:8501
 Run the CLI:
 
 ```powershell
-campusnet-agent diagnose --no-trace --llm --context "宿舍晚上打游戏卡，但刷网页还行"
+campusnet-agent diagnose --no-trace --llm --context "晚上打游戏卡，但刷网页还行"
 ```
 
 ## Project Structure
@@ -116,10 +116,10 @@ CampusNet-Agent
 
 ## Example Use Cases
 
-- "宿舍晚上打游戏卡，但网页还行"
-- "校园网能连上，但网页经常打不开"
+- "晚上打游戏卡，但网页还行"
+- "Wi-Fi 能连上，但网页经常打不开"
 - "只有 B 站加载慢，其他网站正常"
-- "想给学校网络中心提交一份有证据的反馈报告"
+- "想给网络管理员或运营商提交一份有证据的反馈报告"
 
 ## Security
 
@@ -128,7 +128,7 @@ and virtual environments. Use `.env.example` as the template and keep real keys 
 
 ## Limitations
 
-- The tool cannot directly change campus network infrastructure.
+- The tool cannot directly change router, ISP, or network infrastructure.
 - One-time snapshots may miss intermittent evening congestion.
 - Gaming diagnosis is more accurate when the user provides the target game server IP or runs
   short monitoring during the actual lag period.
@@ -136,7 +136,7 @@ and virtual environments. Use `.env.example` as the template and keep real keys 
 ## Reference Projects
 
 This project studied the design ideas of several open-source NetOps tools, but implements its
-own campus-network-focused workflow:
+own local-network-focused workflow:
 
 - `network-mcp`: structured network tool output for AI agents
 - `Instability`: interactive network troubleshooting chatbot workflow

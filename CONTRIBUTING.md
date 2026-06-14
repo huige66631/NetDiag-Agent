@@ -1,7 +1,7 @@
 # Contributing
 
-This is a student project prototype. Keep changes focused on the campus network diagnosis
-scenario.
+This is a student project prototype. Keep changes focused on local network diagnosis
+scenarios.
 
 ## Development
 
@@ -17,4 +17,3 @@ pytest
 - Do not commit `.env.local` or API keys.
 - Prefer structured probe results over ad-hoc text parsing in the UI.
 - Keep LLM output grounded in collected network evidence.
-
