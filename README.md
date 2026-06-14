@@ -18,6 +18,8 @@ report generation.
 
 - Symptom-aware agent planning for gaming lag, web access issues, single-site slowness,
   and deeper route diagnosis
+- Agent Trace view that shows task understanding, tool selection, observations, and next
+  decisions
 - Local network probing with `ping`, `ipconfig`, `nslookup`, and optional `tracert`
 - Structured metrics: gateway, DNS servers, average latency, packet loss, DNS resolution time
 - Rule-based diagnosis for access-link issues, DNS issues, campus出口 congestion, and
@@ -101,6 +103,7 @@ CampusNet-Agent
 ├── app.py                         # Streamlit UI
 ├── src/campusnet_agent
 │   ├── planner.py                 # Symptom-aware agent plan
+│   ├── agent.py                   # Agent trace and decision display
 │   ├── probe.py                   # Local network probing tools
 │   ├── diagnosis.py               # Rule-based diagnosis
 │   ├── monitor.py                 # Short monitoring and jitter summary
@@ -138,4 +141,3 @@ own campus-network-focused workflow:
 - `network-mcp`: structured network tool output for AI agents
 - `Instability`: interactive network troubleshooting chatbot workflow
 - `AI-Network-Troubleshooting-PoC`: alert-to-analysis-to-report NetOps flow
-

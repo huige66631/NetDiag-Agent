@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
+from campusnet_agent.agent import build_agent_trace, trace_to_rows
 from campusnet_agent.diagnosis import diagnose
 from campusnet_agent.llm import generate_deepseek_report
 from campusnet_agent.monitor import monitor_to_rows, run_monitor
@@ -95,6 +96,8 @@ with plan_col:
         f"路由追踪：{'开启' if plan.include_trace else '关闭'} | "
         f"建议监控：{'是' if plan.monitor_recommended else '否'}"
     )
+    with st.expander("查看 Agent Trace 预案", expanded=False):
+        st.dataframe(pd.DataFrame(trace_to_rows(build_agent_trace(user_context, plan))), hide_index=True)
 with action_col:
     st.subheader("运行状态")
     st.markdown(
@@ -143,6 +146,7 @@ if run:
 
     st.session_state.snapshot = snapshot
     st.session_state.plan = plan
+    st.session_state.agent_trace = build_agent_trace(user_context, plan, snapshot, monitor_summary)
     st.session_state.monitor_summary = monitor_summary
     st.session_state.llm_report = llm_report
     progress.progress(100)
@@ -153,6 +157,10 @@ if snapshot:
     diagnosis = snapshot.diagnosis
     monitor_summary = st.session_state.get("monitor_summary")
     llm_report = st.session_state.get("llm_report")
+    active_plan = st.session_state.get("plan") or plan
+    agent_trace = st.session_state.get("agent_trace") or build_agent_trace(
+        "", active_plan, snapshot, monitor_summary
+    )
 
     st.divider()
     col1, col2, col3, col4 = st.columns(4)
@@ -163,6 +171,10 @@ if snapshot:
 
     st.subheader("诊断结论")
     st.info(diagnosis.summary if diagnosis else "尚未生成诊断结论。")
+
+    st.subheader("Agent Trace")
+    st.caption("展示 Agent 如何理解问题、选择工具、观察结果并决定下一步。")
+    st.dataframe(pd.DataFrame(trace_to_rows(agent_trace)), use_container_width=True, hide_index=True)
 
     if llm_report:
         st.subheader("DeepSeek Agent 报告")
