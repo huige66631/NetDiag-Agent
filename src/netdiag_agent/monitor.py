@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import time
 from dataclasses import dataclass
 from datetime import datetime
 
-from campusnet_agent.probe import ping
+from netdiag_agent.probe import ping
 
 
 @dataclass
@@ -87,4 +87,5 @@ def monitor_to_rows(summary: MonitorSummary) -> list[dict[str, object]]:
         }
         for point in summary.points
     ]
+
 

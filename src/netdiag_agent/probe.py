@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import ipaddress
 import platform
@@ -8,7 +8,7 @@ import subprocess
 import time
 from datetime import datetime
 
-from campusnet_agent.models import DnsResult, NetworkSnapshot, PingResult, TraceHop, TraceResult
+from netdiag_agent.models import DnsResult, NetworkSnapshot, PingResult, TraceHop, TraceResult
 
 
 DEFAULT_TARGETS = {
@@ -230,3 +230,4 @@ def collect_snapshot(targets: dict[str, str] | None = None, include_trace: bool 
         dns=dns_results,
         traces=traces,
     )
+

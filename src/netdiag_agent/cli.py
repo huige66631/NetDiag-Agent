@@ -1,11 +1,11 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 
-from campusnet_agent.diagnosis import diagnose
-from campusnet_agent.llm import generate_deepseek_report
-from campusnet_agent.probe import collect_snapshot
-from campusnet_agent.report import render_markdown, save_report
+from netdiag_agent.diagnosis import diagnose
+from netdiag_agent.llm import generate_deepseek_report
+from netdiag_agent.probe import collect_snapshot
+from netdiag_agent.report import render_markdown, save_report
 
 
 def main() -> None:
@@ -38,3 +38,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

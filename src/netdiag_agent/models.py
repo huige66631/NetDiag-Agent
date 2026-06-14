@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -79,4 +79,5 @@ class NetworkSnapshot:
             return value
 
         return obj(self)
+
 

@@ -14,3 +14,4 @@ pytest
 git status
 rg "sk-" . -g "!.env.local"
 ```
+

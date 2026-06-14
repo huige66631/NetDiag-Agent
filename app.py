@@ -1,18 +1,18 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
 
-from campusnet_agent.agent import build_agent_trace, trace_to_rows
-from campusnet_agent.diagnosis import diagnose
-from campusnet_agent.llm import generate_deepseek_report
-from campusnet_agent.monitor import monitor_to_rows, run_monitor
-from campusnet_agent.planner import plan_from_context
-from campusnet_agent.probe import collect_snapshot
-from campusnet_agent.report import render_markdown, save_report
+from netdiag_agent.agent import build_agent_trace, trace_to_rows
+from netdiag_agent.diagnosis import diagnose
+from netdiag_agent.llm import generate_deepseek_report
+from netdiag_agent.monitor import monitor_to_rows, run_monitor
+from netdiag_agent.planner import plan_from_context
+from netdiag_agent.probe import collect_snapshot
+from netdiag_agent.report import render_markdown, save_report
 
 
-st.set_page_config(page_title="CampusNet Agent", page_icon="🌐", layout="wide")
+st.set_page_config(page_title="NetDiag Agent", page_icon="🌐", layout="wide")
 
 st.markdown(
     """
@@ -49,7 +49,7 @@ st.markdown(
 st.markdown(
     """
     <div class="hero">
-      <h1>CampusNet Agent</h1>
+      <h1>NetDiag Agent</h1>
       <p>面向本地网络问题的诊断 Agent：自动选择工具，采集真实网络数据，并用 DeepSeek 生成可解释报告。</p>
     </div>
     """,
@@ -233,3 +233,4 @@ if snapshot:
 
     with st.expander("Markdown 报告"):
         st.code(render_markdown(snapshot), language="markdown")
+

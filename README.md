@@ -1,6 +1,6 @@
-# CampusNet Agent
+# NetDiag Agent
 
-CampusNet Agent is a local AI agent for diagnosing everyday network problems. It collects real
+NetDiag Agent is a local AI agent for diagnosing everyday network problems. It collects real
 network evidence from the current computer, chooses a diagnosis workflow based on the user's
 symptom, and uses DeepSeek to generate a readable troubleshooting report.
 
@@ -25,7 +25,8 @@ analysis and report generation.
 - Rule-based diagnosis for access-link issues, DNS issues, network出口 congestion, and
   target-side/CDN problems
 - Short monitoring mode to capture intermittent packet loss and jitter
-- DeepSeek-powered Agent report with evidence, suggestions, and a network-center feedback draft
+- DeepSeek-powered Agent report with evidence, suggestions, and a network admin / ISP support
+  feedback draft
 - Streamlit web UI for local demonstration
 
 ## Architecture
@@ -51,14 +52,14 @@ Rule diagnosis
     v
 DeepSeek report generation
     v
-Student-facing and network-center-facing report
+User-facing and network-admin-facing report
 ```
 
 ## Quick Start
 
 ```powershell
 git clone <your-repo-url>
-cd CampusNet-Agent
+cd netdiag-agent
 python -m venv .venv
 .\.venv\Scripts\activate
 pip install -e .[dev]
@@ -93,15 +94,15 @@ http://localhost:8501
 Run the CLI:
 
 ```powershell
-campusnet-agent diagnose --no-trace --llm --context "晚上打游戏卡，但刷网页还行"
+netdiag-agent diagnose --no-trace --llm --context "晚上打游戏卡，但刷网页还行"
 ```
 
 ## Project Structure
 
 ```text
-CampusNet-Agent
+netdiag-agent
 ├── app.py                         # Streamlit UI
-├── src/campusnet_agent
+├── src/netdiag_agent
 │   ├── planner.py                 # Symptom-aware agent plan
 │   ├── agent.py                   # Agent trace and decision display
 │   ├── probe.py                   # Local network probing tools
@@ -141,3 +142,4 @@ own local-network-focused workflow:
 - `network-mcp`: structured network tool output for AI agents
 - `Instability`: interactive network troubleshooting chatbot workflow
 - `AI-Network-Troubleshooting-PoC`: alert-to-analysis-to-report NetOps flow
+

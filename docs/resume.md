@@ -1,6 +1,6 @@
 # Resume Description
 
-**CampusNet Agent: AI Agent for Local Network Problem Diagnosis**
+**NetDiag Agent: AI Agent for Local Network Problem Diagnosis**
 
 Built a local AI agent for diagnosing network lag in Wi-Fi, dorm, home, and office scenarios.
 The system collects real network evidence from the user's computer, including gateway latency,
@@ -12,3 +12,4 @@ jitter. Integrated DeepSeek API to generate evidence-grounded reports for both s
 network administrators or ISP support.
 
 **Tech stack:** Python, Streamlit, DeepSeek API, pandas, Windows network tools, pytest.
+

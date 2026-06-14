@@ -1,7 +1,7 @@
-from datetime import datetime
+﻿from datetime import datetime
 
-from campusnet_agent.diagnosis import diagnose
-from campusnet_agent.models import NetworkSnapshot, PingResult
+from netdiag_agent.diagnosis import diagnose
+from netdiag_agent.models import NetworkSnapshot, PingResult
 
 
 def test_gateway_problem_has_wifi_suggestion():
@@ -25,3 +25,4 @@ def test_gateway_problem_has_wifi_suggestion():
 
     assert result.severity == "high"
     assert "网关" in result.summary
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -90,4 +90,5 @@ def plan_from_context(user_context: str, mode: str = "auto") -> AgentPlan:
         monitor_recommended=False,
         rationale=rationale or ["快速诊断默认跳过 tracert，优先给出基础判断。"],
     )
+
 

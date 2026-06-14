@@ -1,5 +1,5 @@
 [project]
-name = "campusnet-agent"
+name = "netdiag-agent"
 version = "0.1.0"
 description = "Local network latency diagnosis and reporting assistant."
 readme = "README.md"
@@ -17,15 +17,16 @@ dev = [
 ]
 
 [project.scripts]
-campusnet-agent = "campusnet_agent.cli:main"
+netdiag-agent = "netdiag_agent.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/campusnet_agent"]
+packages = ["src/netdiag_agent"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+

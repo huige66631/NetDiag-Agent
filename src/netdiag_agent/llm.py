@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 import json
@@ -10,7 +10,7 @@ from typing import Any
 
 import requests
 
-from campusnet_agent.models import NetworkSnapshot
+from netdiag_agent.models import NetworkSnapshot
 
 
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
@@ -63,7 +63,7 @@ def build_agent_prompt(
     monitor_summary: object | None = None,
 ) -> list[dict[str, str]]:
     system = (
-        "你是 CampusNet Agent 的大模型分析层。"
+        "你是 NetDiag Agent 的大模型分析层。"
         "你需要解释 Agent 为什么选择这些工具、每个工具结果说明了什么、下一步应该做什么。"
         "不要编造未执行的测试，不要声称已经测了游戏服务器，除非数据里存在。"
         "输出结构：诊断结论、Agent 执行流程、证据分析、建议操作、给网络管理员或运营商的反馈。"
@@ -117,7 +117,7 @@ def generate_deepseek_report(
                 "Content-Type": "application/json",
                 "Accept": "application/json",
                 "Connection": "close",
-                "User-Agent": "CampusNet-Agent/0.1",
+                "User-Agent": "netdiag-agent/0.1",
             },
             json=payload,
             timeout=timeout,
@@ -189,3 +189,4 @@ def clean_llm_report(content: str) -> str:
     cleaned = re.sub(r"(?<!\d)10\s*30\s*分钟", "10-30 分钟", cleaned)
     cleaned = re.sub(r"(?<!\d)1030\s*分钟", "10-30 分钟", cleaned)
     return cleaned
+

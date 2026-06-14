@@ -1,6 +1,6 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
-from campusnet_agent.models import Diagnosis, NetworkSnapshot, PingResult
+from netdiag_agent.models import Diagnosis, NetworkSnapshot, PingResult
 
 
 def _bad_ping(result: PingResult | None, latency_threshold: float, loss_threshold: float) -> bool:
@@ -92,3 +92,4 @@ def diagnose(snapshot: NetworkSnapshot) -> Diagnosis:
     )
     snapshot.diagnosis = diagnosis
     return diagnosis
+

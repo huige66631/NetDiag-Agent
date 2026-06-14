@@ -1,9 +1,9 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from campusnet_agent.models import NetworkSnapshot
+from netdiag_agent.models import NetworkSnapshot
 
 
 def render_markdown(snapshot: NetworkSnapshot) -> str:
@@ -48,8 +48,9 @@ def save_report(snapshot: NetworkSnapshot, output_dir: str | Path = "reports") -
     path = Path(output_dir)
     path.mkdir(parents=True, exist_ok=True)
     stamp = snapshot.created_at.strftime("%Y%m%d_%H%M%S")
-    md_path = path / f"campusnet_report_{stamp}.md"
-    json_path = path / f"campusnet_snapshot_{stamp}.json"
+    md_path = path / f"netdiag_report_{stamp}.md"
+    json_path = path / f"netdiag_snapshot_{stamp}.json"
     md_path.write_text(render_markdown(snapshot), encoding="utf-8")
     json_path.write_text(json.dumps(snapshot.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
     return md_path, json_path
+

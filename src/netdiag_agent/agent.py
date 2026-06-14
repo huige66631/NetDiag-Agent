@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 
-from campusnet_agent.models import NetworkSnapshot
-from campusnet_agent.monitor import MonitorSummary
-from campusnet_agent.planner import AgentPlan
+from netdiag_agent.models import NetworkSnapshot
+from netdiag_agent.monitor import MonitorSummary
+from netdiag_agent.planner import AgentPlan
 
 
 @dataclass(frozen=True)
@@ -116,3 +116,4 @@ def trace_to_rows(steps: list[AgentTraceStep]) -> list[dict[str, object]]:
         }
         for step in steps
     ]
+
