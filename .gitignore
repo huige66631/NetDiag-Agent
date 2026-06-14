@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.streamlit/
+.env.local
+data/*.csv
+reports/*.md
+reports/*.json
+streamlit.*.log
