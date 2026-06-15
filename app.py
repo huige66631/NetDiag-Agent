@@ -5,7 +5,7 @@ import streamlit as st
 
 from netdiag_agent.agent import build_agent_trace, trace_to_rows
 from netdiag_agent.diagnosis import diagnose
-from netdiag_agent.llm import generate_deepseek_report
+from netdiag_agent.llm import generate_deepseek_report, generate_deepseek_tool_plan
 from netdiag_agent.monitor import monitor_to_rows, run_monitor
 from netdiag_agent.planner import plan_from_context
 from netdiag_agent.probe import collect_snapshot
@@ -76,6 +76,7 @@ with st.sidebar:
         "单站点慢": "single_site",
         "深度路由": "deep",
     }
+    use_llm_planner = st.toggle("DeepSeek 自主规划工具", value=True)
     use_llm = st.toggle("DeepSeek Agent 报告", value=True)
     run_monitor_enabled = st.toggle("短时持续监控", value=False)
     samples = st.slider("监控采样次数", min_value=3, max_value=12, value=5)
@@ -83,12 +84,14 @@ with st.sidebar:
     save = st.toggle("保存本地报告", value=True)
     run = st.button("开始诊断", type="primary", use_container_width=True)
 
-plan = plan_from_context(user_context, mode_map[mode_label])
+rule_plan = plan_from_context(user_context, mode_map[mode_label])
+plan = st.session_state.get("preview_plan", rule_plan) if use_llm_planner else rule_plan
 
 plan_col, action_col = st.columns([1.1, 1])
 with plan_col:
     st.subheader("Agent 计划")
     st.markdown(f"**{plan.title}**")
+    st.caption(f"计划来源：{'DeepSeek 工具规划器' if plan.source == 'llm' else '规则规划器'}")
     for item in plan.rationale:
         st.write(f"- {item}")
     st.caption(
@@ -116,8 +119,17 @@ if run:
     progress = st.progress(0)
     status = st.empty()
 
+    active_plan = rule_plan
+    tool_plan_result = None
+    if use_llm_planner:
+        status.write("DeepSeek 正在选择要调用的网络工具...")
+        tool_plan_result = generate_deepseek_tool_plan(user_context, mode_map[mode_label])
+        active_plan = tool_plan_result.plan
+        st.session_state.preview_plan = active_plan
+    progress.progress(15)
+
     status.write("正在执行网络探测...")
-    snapshot = collect_snapshot(targets=plan.targets, include_trace=plan.include_trace)
+    snapshot = collect_snapshot(targets=active_plan.targets, include_trace=active_plan.include_trace)
     progress.progress(35)
 
     status.write("正在生成规则诊断...")
@@ -125,9 +137,9 @@ if run:
     progress.progress(55)
 
     monitor_summary = None
-    if run_monitor_enabled or plan.monitor_recommended:
+    if run_monitor_enabled or active_plan.monitor_recommended:
         status.write("正在执行短时持续监控...")
-        monitor_summary = run_monitor(plan.targets, samples=samples, interval_seconds=interval)
+        monitor_summary = run_monitor(active_plan.targets, samples=samples, interval_seconds=interval)
     progress.progress(75)
 
     llm_report = None
@@ -136,7 +148,7 @@ if run:
         llm_report = generate_deepseek_report(
             snapshot,
             user_context=user_context,
-            plan=plan,
+            plan=active_plan,
             monitor_summary=monitor_summary,
         )
     progress.progress(95)
@@ -145,8 +157,9 @@ if run:
         save_report(snapshot)
 
     st.session_state.snapshot = snapshot
-    st.session_state.plan = plan
-    st.session_state.agent_trace = build_agent_trace(user_context, plan, snapshot, monitor_summary)
+    st.session_state.plan = active_plan
+    st.session_state.tool_plan_result = tool_plan_result
+    st.session_state.agent_trace = build_agent_trace(user_context, active_plan, snapshot, monitor_summary)
     st.session_state.monitor_summary = monitor_summary
     st.session_state.llm_report = llm_report
     progress.progress(100)
@@ -157,6 +170,7 @@ if snapshot:
     diagnosis = snapshot.diagnosis
     monitor_summary = st.session_state.get("monitor_summary")
     llm_report = st.session_state.get("llm_report")
+    tool_plan_result = st.session_state.get("tool_plan_result")
     active_plan = st.session_state.get("plan") or plan
     agent_trace = st.session_state.get("agent_trace") or build_agent_trace(
         "", active_plan, snapshot, monitor_summary
@@ -175,6 +189,13 @@ if snapshot:
     st.subheader("Agent Trace")
     st.caption("展示 Agent 如何理解问题、选择工具、观察结果并决定下一步。")
     st.dataframe(pd.DataFrame(trace_to_rows(agent_trace)), use_container_width=True, hide_index=True)
+
+    if tool_plan_result:
+        with st.expander("DeepSeek 工具规划器输出", expanded=False):
+            if tool_plan_result.success:
+                st.code(tool_plan_result.raw, language="json")
+            else:
+                st.warning(f"DeepSeek 工具规划失败，已回退规则规划：{tool_plan_result.error}")
 
     if llm_report:
         st.subheader("DeepSeek Agent 报告")

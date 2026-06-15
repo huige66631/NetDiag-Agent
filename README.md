@@ -18,6 +18,7 @@ analysis and report generation.
 
 - Symptom-aware agent planning for gaming lag, web access issues, single-site slowness,
   and deeper route diagnosis
+- DeepSeek tool planner that selects a safe network probe plan before execution
 - Agent Trace view that shows task understanding, tool selection, observations, and next
   decisions
 - Local network probing with `ping`, `ipconfig`, `nslookup`, and optional `tracert`
@@ -36,6 +37,8 @@ User symptom
     |
     v
 Agent planner
+    |-- optional DeepSeek tool planner
+    |-- safe allowlisted tools only
     |-- gaming lag
     |-- web access issue
     |-- single-site slowness
@@ -126,6 +129,9 @@ netdiag-agent
 
 Do not commit API keys. This repository ignores `.env.local`, generated reports, logs, caches,
 and virtual environments. Use `.env.example` as the template and keep real keys local.
+
+The LLM does not execute arbitrary shell commands. It can only select from an allowlisted plan
+of local network probes, and the Python application executes those probes with fixed arguments.
 
 ## Limitations
 

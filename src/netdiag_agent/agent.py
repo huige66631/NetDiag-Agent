@@ -33,7 +33,11 @@ def build_agent_trace(
         AgentTraceStep(
             step=2,
             phase="选择工具",
-            action="根据诊断模式选择本地网络探测工具。",
+            action=(
+                "由 DeepSeek 工具规划器选择本地网络探测工具。"
+                if plan.source == "llm"
+                else "由规则规划器选择本地网络探测工具。"
+            ),
             observation=(
                 f"目标：{', '.join(plan.targets.values())}；"
                 f"tracert：{'开启' if plan.include_trace else '关闭'}；"

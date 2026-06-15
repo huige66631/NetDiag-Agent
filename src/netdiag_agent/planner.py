@@ -11,6 +11,7 @@ class AgentPlan:
     include_trace: bool
     monitor_recommended: bool
     rationale: list[str]
+    source: str = "rule"
 
 
 COMMON_TARGETS = {
