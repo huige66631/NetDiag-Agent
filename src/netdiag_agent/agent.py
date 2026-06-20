@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from netdiag_agent.models import NetworkSnapshot
 from netdiag_agent.monitor import MonitorSummary
 from netdiag_agent.planner import AgentPlan
+from netdiag_agent.memory import MemoryRecord
+from netdiag_agent.rag import RagHit
 
 
 @dataclass(frozen=True)
@@ -21,6 +23,8 @@ def build_agent_trace(
     plan: AgentPlan,
     snapshot: NetworkSnapshot | None = None,
     monitor_summary: MonitorSummary | None = None,
+    rag_hits: list[RagHit] | None = None,
+    memory_records: list[MemoryRecord] | None = None,
 ) -> list[AgentTraceStep]:
     steps = [
         AgentTraceStep(
@@ -94,6 +98,28 @@ def build_agent_trace(
                 action="执行多次采样，观察延迟波动和丢包趋势。",
                 observation=monitor_summary.conclusion,
                 next_decision="把快照证据和监控趋势交给大模型生成可解释报告。",
+            )
+        )
+
+    if rag_hits:
+        steps.append(
+            AgentTraceStep(
+                step=len(steps) + 1,
+                phase="RAG 检索",
+                action="从本地 Chroma 向量数据库检索相关网络排障知识。",
+                observation="命中：" + "；".join(hit.title for hit in rag_hits[:3]),
+                next_decision="把检索依据交给大模型，减少纯经验式回答。",
+            )
+        )
+
+    if memory_records:
+        steps.append(
+            AgentTraceStep(
+                step=len(steps) + 1,
+                phase="长期记忆",
+                action="读取本地历史诊断记录，寻找相似症状和过往结论。",
+                observation=f"召回 {len(memory_records)} 条历史记忆。",
+                next_decision="结合历史趋势，但最终以本次探测证据为准。",
             )
         )
 

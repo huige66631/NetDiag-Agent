@@ -5,6 +5,8 @@ description = "Local network latency diagnosis and reporting assistant."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "chromadb>=0.5.0",
+    "langgraph>=0.2.0",
     "pandas>=2.0.0",
     "requests>=2.31.0",
     "streamlit>=1.35.0",

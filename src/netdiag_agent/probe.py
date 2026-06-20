@@ -179,6 +179,25 @@ def dns_lookup(host: str, dns_server: str | None = None) -> DnsResult:
     )
 
 
+def compare_dns(host: str, dns_servers: list[str] | None = None) -> dict[str, DnsResult]:
+    candidates = [server for server in (dns_servers or get_dns_servers()) if server]
+    results: dict[str, DnsResult] = {}
+
+    for dns_server in candidates[:3]:
+        label = f"local:{dns_server}"
+        results[label] = dns_lookup(host, dns_server=dns_server)
+
+    public_servers = {
+        "aliyun_public": "223.5.5.5",
+        "tencent_public": "119.29.29.29",
+    }
+    for label, dns_server in public_servers.items():
+        if dns_server in candidates:
+            continue
+        results[label] = dns_lookup(host, dns_server=dns_server)
+    return results
+
+
 def traceroute(target: str, max_hops: int = 15, timeout: int = 30) -> TraceResult:
     system = platform.system().lower()
     command = ["tracert", "-h", str(max_hops), target] if system == "windows" else ["traceroute", "-m", str(max_hops), target]

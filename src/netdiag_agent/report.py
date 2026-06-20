@@ -9,24 +9,24 @@ from netdiag_agent.models import NetworkSnapshot
 def render_markdown(snapshot: NetworkSnapshot) -> str:
     diagnosis = snapshot.diagnosis
     lines = [
-        "# 网络诊断报告",
+        "# 个人网络诊断结果",
         "",
         f"- 生成时间：{snapshot.created_at.strftime('%Y-%m-%d %H:%M:%S')}",
         f"- 默认网关：{snapshot.gateway or '未识别'}",
         f"- DNS 服务器：{', '.join(snapshot.dns_servers) if snapshot.dns_servers else '未识别'}",
         "",
-        "## 诊断结论",
+        "## 这次判断",
         "",
         diagnosis.summary if diagnosis else "尚未生成诊断结论。",
         "",
     ]
 
     if diagnosis:
-        lines.extend(["## 证据", ""])
+        lines.extend(["## 发生了什么", ""])
         lines.extend(f"- {item}" for item in diagnosis.evidence)
-        lines.extend(["", "## 可能原因", ""])
+        lines.extend(["", "## 为什么会这样", ""])
         lines.extend(f"- {item}" for item in diagnosis.likely_causes)
-        lines.extend(["", "## 建议操作", ""])
+        lines.extend(["", "## 你现在可以怎么做", ""])
         lines.extend(f"- {item}" for item in diagnosis.suggestions)
 
     lines.extend(["", "## Ping 结果", ""])

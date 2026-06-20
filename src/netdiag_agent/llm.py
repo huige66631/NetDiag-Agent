@@ -12,6 +12,7 @@ import requests
 
 from netdiag_agent.models import NetworkSnapshot
 from netdiag_agent.planner import AgentPlan, plan_from_context
+from netdiag_agent.react import AVAILABLE_REACT_TOOLS, ReactAction, ReactObservation
 
 
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
@@ -35,6 +36,15 @@ class LlmToolPlan:
     error: str | None = None
 
 
+@dataclass
+class LlmReactDecision:
+    success: bool
+    action: ReactAction
+    model: str
+    raw: str = ""
+    error: str | None = None
+
+
 def load_local_env() -> None:
     env_path = Path.cwd() / ".env.local"
     if not env_path.exists():
@@ -52,9 +62,9 @@ def load_local_env() -> None:
 
 def build_report_prompt(snapshot: NetworkSnapshot, user_context: str = "") -> list[dict[str, str]]:
     system = (
-        "你是一个本地网络诊断 Agent，面向通信工程学生项目展示。"
+        "你是一个面向个人用户的本地网络诊断助手。"
         "你必须基于工具采集到的真实网络数据分析，不要编造不存在的测试结果。"
-        "输出要包含：一句话结论、证据分析、可能原因、给用户的操作建议、给网络管理员或运营商的反馈版本。"
+        "输出要包含：一句话结论、证据分析、可能原因、用户现在就能做的操作建议。"
         "如果证据不足，要明确说明还需要做哪些补充测试。"
     )
     payload: dict[str, Any] = snapshot.to_dict()
@@ -71,21 +81,27 @@ def build_agent_prompt(
     user_context: str = "",
     plan: object | None = None,
     monitor_summary: object | None = None,
+    rag_context: str = "",
+    memory_context: str = "",
 ) -> list[dict[str, str]]:
     system = (
-        "你是 NetDiag Agent 的大模型分析层。"
-        "你需要解释 Agent 为什么选择这些工具、每个工具结果说明了什么、下一步应该做什么。"
+        "你是 NetDiag Agent 的个人网络诊断分析层。"
+        "你需要解释 Agent 为什么选择这些工具、每个工具结果说明了什么、用户下一步自己能做什么。"
         "不要编造未执行的测试，不要声称已经测了游戏服务器，除非数据里存在。"
-        "输出结构：诊断结论、Agent 执行流程、证据分析、建议操作、给网络管理员或运营商的反馈。"
-        "语言要自然、简洁、像中文技术报告，不要使用生硬直译。"
+        "输出结构：诊断结论、发生了什么、你现在可以怎么做、如果还不行再测什么。"
+        "语言要自然、简洁、像对个人用户解释问题，不要写成运维报告。"
         "不要使用 Markdown 删除线语法，不要输出 ~~。时间范围请写成“20:00-23:00”。"
         "不要说“无法否认用户问题”，应改为“当前快照未捕捉到异常，仍建议用持续监控验证”。"
+        "RAG 和历史记忆只能作为参考，最终判断必须优先服从本次真实工具采集结果。"
+        "不要让用户去找网络管理员或运营商，除非确实已经排除本地问题，而且也只做一句轻描淡写的补充。"
     )
     payload: dict[str, Any] = {
         "user_context": user_context,
         "agent_plan": getattr(plan, "__dict__", plan),
         "snapshot": snapshot.to_dict(),
         "monitor_summary": getattr(monitor_summary, "__dict__", monitor_summary),
+        "rag_context": rag_context or "未启用或未检索到相关知识。",
+        "memory_context": memory_context or "暂无历史诊断记忆。",
     }
     user = f"请基于下面真实数据生成中文 Agent 诊断报告：\n{payload}"
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
@@ -123,6 +139,148 @@ def build_tool_plan_prompt(user_context: str, requested_mode: str = "auto") -> l
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
+def build_react_decision_prompt(
+    user_context: str,
+    observations: list[ReactObservation],
+    requested_mode: str = "auto",
+    max_steps: int = 8,
+) -> list[dict[str, str]]:
+    system = (
+        "你是 NetDiag Agent 的 ReAct 决策层。"
+        "你不是选择预设流程，而是根据已有观察结果决定下一步调用哪个工具。"
+        "每次只能选择一个工具。不要输出 Markdown，不要解释，只输出 JSON。"
+        "工具执行由 Python 白名单完成，你不能要求执行任意 shell 命令。"
+        "必须先获得网络基础信息，再逐步检查网关、公网连通性、DNS、RAG 或历史记忆。"
+        "如果用户描述游戏、跳 Ping、卡顿，应在网关和公网 Ping 后考虑 short_monitor。"
+        "如果用户描述网页打不开或 DNS，应考虑 dns_lookup、compare_dns 和 rag_search。"
+        "证据足够时选择 final_answer。最多不要超过给定步数。"
+    )
+    tool_text = "\n".join(f"- {name}: {desc}" for name, desc in AVAILABLE_REACT_TOOLS.items())
+    observation_text = "\n".join(
+        (
+            f"{item.step}. thought={item.thought}; tool={item.tool}; "
+            f"args={item.args}; success={item.success}; observation={item.summary}"
+        )
+        for item in observations
+    ) or "暂无观察。"
+    user = (
+        f"用户问题：{user_context or '未提供'}\n"
+        f"用户选择模式：{requested_mode}\n"
+        f"最大步数：{max_steps}\n\n"
+        f"可用工具：\n{tool_text}\n\n"
+        f"已有观察：\n{observation_text}\n\n"
+        "输出 JSON："
+        '{"thought":"为什么下一步要这样做",'
+        '"tool":"get_network_profile|ping_target|dns_lookup|compare_dns|traceroute|short_monitor|rag_search|recall_memory|final_answer",'
+        '"args":{"target":"gateway|public_dns|tencent_dns|baidu|bilibili|自定义域名或IP","host":"自定义域名"}}'
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def generate_deepseek_react_action(
+    user_context: str,
+    observations: list[ReactObservation],
+    requested_mode: str = "auto",
+    max_steps: int = 8,
+) -> LlmReactDecision:
+    load_local_env()
+    selected_model = os.getenv("DEEPSEEK_MODEL") or DEFAULT_DEEPSEEK_MODEL
+    fallback = fallback_react_action(user_context, observations, requested_mode, max_steps)
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    base_url = (os.getenv("DEEPSEEK_BASE_URL") or DEFAULT_DEEPSEEK_BASE_URL).rstrip("/")
+
+    if not api_key:
+        return LlmReactDecision(False, fallback, selected_model, error="DEEPSEEK_API_KEY is not configured.")
+
+    payload = {
+        "model": selected_model,
+        "messages": build_react_decision_prompt(user_context, observations, requested_mode, max_steps),
+        "temperature": 0,
+        "stream": False,
+    }
+    try:
+        data = _chat_completion(base_url, api_key, payload, selected_model, timeout=30)
+        content = data["choices"][0]["message"]["content"].strip()
+        return LlmReactDecision(True, parse_react_action(content, fallback), selected_model, raw=content)
+    except Exception as exc:
+        return LlmReactDecision(
+            False,
+            fallback,
+            selected_model,
+            error=f"DeepSeek 决策失败，已回退本地策略：{exc}",
+        )
+
+
+def parse_react_action(content: str, fallback: ReactAction) -> ReactAction:
+    raw = content.strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```(?:json)?", "", raw).strip()
+        raw = re.sub(r"```$", "", raw).strip()
+    match = re.search(r"\{.*\}", raw, flags=re.S)
+    if match:
+        raw = match.group(0)
+    data = json.loads(raw)
+    tool = str(data.get("tool") or fallback.tool)
+    if tool not in AVAILABLE_REACT_TOOLS:
+        tool = fallback.tool
+    args = data.get("args") if isinstance(data.get("args"), dict) else fallback.args
+    return ReactAction(thought=str(data.get("thought") or fallback.thought)[:300], tool=tool, args=args)
+
+
+def fallback_react_action(
+    user_context: str,
+    observations: list[ReactObservation],
+    requested_mode: str = "auto",
+    max_steps: int = 8,
+) -> ReactAction:
+    called = [item.tool for item in observations]
+    text = f"{user_context} {requested_mode}".lower()
+    custom_target = _extract_custom_target_from_context(user_context)
+    has_ping = any(item.tool == "ping_target" for item in observations)
+    has_dns = any(item.tool == "dns_lookup" for item in observations)
+    has_rag = any(item.tool == "rag_search" for item in observations)
+    has_memory = any(item.tool == "recall_memory" for item in observations)
+
+    if len(observations) >= max_steps - 1:
+        return ReactAction("已接近最大步数，结束工具调用并生成诊断。", "final_answer", {"reason": "达到最大步数"})
+    if "get_network_profile" not in called:
+        return ReactAction("先读取本机网关和 DNS，判断后续应测本地还是公网。", "get_network_profile", {})
+    if not any(item.tool == "ping_target" and item.args.get("target") == "gateway" for item in observations):
+        return ReactAction("先测试本机到默认网关，排除 Wi-Fi 或接入链路问题。", "ping_target", {"target": "gateway"})
+    if not any(item.tool == "ping_target" and item.args.get("target") == "public_dns" for item in observations):
+        return ReactAction("网关之后需要测试公网 IP，观察出口链路延迟和丢包。", "ping_target", {"target": "public_dns"})
+    if custom_target and not any(
+        item.tool == "ping_target" and item.args.get("target") == custom_target for item in observations
+    ):
+        return ReactAction("用户提供了自定义目标，应优先验证这个目标本身的连通性。", "ping_target", {"target": custom_target})
+    if custom_target and not any(
+        item.tool in {"dns_lookup", "compare_dns"} and item.args.get("host") == custom_target for item in observations
+    ) and not re.fullmatch(r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}", custom_target):
+        return ReactAction("自定义目标是域名时，需要进一步检查它的 DNS 解析情况。", "compare_dns", {"host": custom_target})
+    if ("网页" in text or "dns" in text or "打不开" in text) and not has_dns:
+        return ReactAction("用户描述偏网页或 DNS 问题，需要检查域名解析。", "dns_lookup", {"host": "baidu"})
+    if ("网页" in text or "dns" in text or "打不开" in text) and not any(
+        item.tool == "compare_dns" for item in observations
+    ):
+        return ReactAction("DNS 类问题适合对比本机 DNS 和公共 DNS 的解析差异。", "compare_dns", {"host": "baidu"})
+    if any(word in text for word in ["游戏", "跳", "ping", "卡顿", "valorant", "lol"]) and not any(
+        item.tool == "short_monitor" for item in observations
+    ):
+        return ReactAction("实时卡顿需要观察短时抖动和间歇性丢包。", "short_monitor", {"target": "public_dns"})
+    if not has_rag:
+        return ReactAction("已有网络证据后检索排障知识，避免报告只靠模型经验。", "rag_search", {"query": user_context})
+    if not has_memory:
+        return ReactAction("召回历史诊断记忆，判断是否为反复出现的问题。", "recall_memory", {})
+    if has_ping or has_dns:
+        return ReactAction("已有足够证据，可以生成最终诊断。", "final_answer", {"reason": "证据已覆盖本地链路、公网或 DNS"})
+    return ReactAction("基础证据不足，先测试公网连通性。", "ping_target", {"target": "public_dns"})
+
+
+def _extract_custom_target_from_context(user_context: str) -> str:
+    match = re.search(r"\[custom_target=([^\]]+)\]", user_context)
+    return match.group(1).strip() if match else ""
+
+
 def generate_deepseek_tool_plan(user_context: str, requested_mode: str = "auto") -> LlmToolPlan:
     load_local_env()
     selected_model = os.getenv("DEEPSEEK_MODEL") or DEFAULT_DEEPSEEK_MODEL
@@ -145,7 +303,7 @@ def generate_deepseek_tool_plan(user_context: str, requested_mode: str = "auto")
         plan = parse_tool_plan(content, fallback)
         return LlmToolPlan(True, plan, selected_model, raw=content)
     except Exception as exc:
-        return LlmToolPlan(False, fallback, selected_model, error=str(exc))
+        return LlmToolPlan(False, fallback, selected_model, error=f"DeepSeek 规划失败，已回退规则规划：{exc}")
 
 
 def parse_tool_plan(content: str, fallback: AgentPlan) -> AgentPlan:
@@ -205,6 +363,8 @@ def generate_deepseek_report(
     user_context: str = "",
     plan: object | None = None,
     monitor_summary: object | None = None,
+    rag_context: str = "",
+    memory_context: str = "",
     model: str | None = None,
     timeout: int = 45,
 ) -> LlmReport:
@@ -223,7 +383,14 @@ def generate_deepseek_report(
 
     payload = {
         "model": selected_model,
-        "messages": build_agent_prompt(snapshot, user_context, plan, monitor_summary),
+        "messages": build_agent_prompt(
+            snapshot,
+            user_context,
+            plan,
+            monitor_summary,
+            rag_context=rag_context,
+            memory_context=memory_context,
+        ),
         "temperature": 0.2,
         "stream": False,
     }

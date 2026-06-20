@@ -6,6 +6,8 @@ __pycache__/
 .streamlit/
 .env.local
 data/*.csv
+data/chroma/
+data/memory/
 reports/*.md
 reports/*.json
 streamlit.*.log
