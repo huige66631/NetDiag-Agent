@@ -6,12 +6,32 @@ network probes on the user's own computer, uses LangGraph to orchestrate the wor
 troubleshooting knowledge from a local Chroma vector database, remembers historical diagnosis
 cases, and can call DeepSeek to generate an evidence-based Chinese report.
 
+## What It Looks Like
+
+### Home
+
+![NetDiag Agent home](assets/screenshots/home.png)
+
+### Diagnosis Result
+
+![NetDiag Agent diagnosis report top](assets/screenshots/report_top.png)
+![NetDiag Agent diagnosis report detail](assets/screenshots/report_detail.png)
+
 ## Why Local
 
 Network diagnosis must happen on the user's current device and current network. If the whole
 app is deployed to a cloud server, it will diagnose the cloud server's network instead of the
 user's Wi-Fi, router, DNS, gateway, or ISP path. NetDiag Agent therefore runs locally and uses
 the LLM only for planning and explanation.
+
+## What Makes It an Agent
+
+- It does not generate a diagnosis from chat alone. It runs real local probes on the current
+  device and current network.
+- The LLM does not execute arbitrary shell commands. It can only choose from an allowlist of
+  fixed network, RAG, and memory tools.
+- The workflow is iterative: the model chooses one tool, Python executes it, the observation is
+  returned, and the next decision is made only after seeing evidence.
 
 ## Core Features
 
@@ -27,6 +47,20 @@ the LLM only for planning and explanation.
 - Streamlit UI showing Agent Trace, LangGraph nodes, RAG retrieval hits, memory recall, raw
   evidence, charts, and final report
 - DeepSeek report generation based only on collected evidence, retrieved knowledge, and memory
+
+## Quick Try
+
+If you just want to try the local app:
+
+1. Clone the repository and install dependencies
+2. Put your DeepSeek API key in `.env.local`
+3. Start the app with `start_app.bat` or `streamlit run app.py`
+
+Then open:
+
+```text
+http://localhost:8501
+```
 
 ## Architecture
 
@@ -89,6 +123,12 @@ Run the web UI:
 
 ```powershell
 streamlit run app.py
+```
+
+Or use the local starter on Windows:
+
+```powershell
+start_app.bat
 ```
 
 Open:
