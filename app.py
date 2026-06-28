@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from html import escape
+
 import pandas as pd
 import streamlit as st
 
@@ -132,14 +134,6 @@ st.markdown(
         margin-bottom: 1rem;
     }
 
-    .hero-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-
     .hero-copy {
         max-width: 64ch;
     }
@@ -166,29 +160,6 @@ st.markdown(
         font-size: 0.98rem;
         line-height: 1.65;
         text-wrap: pretty;
-    }
-
-    .hero-note {
-        min-width: 240px;
-        max-width: 320px;
-        background: var(--surface-subtle);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 0.95rem 1rem;
-    }
-
-    .hero-note strong {
-        display: block;
-        color: var(--ink);
-        font-size: 0.94rem;
-        margin-bottom: 0.4rem;
-    }
-
-    .hero-note span {
-        color: var(--muted);
-        font-size: 0.88rem;
-        line-height: 1.55;
-        display: block;
     }
 
     .memory-banner {
@@ -319,6 +290,113 @@ st.markdown(
         line-height: 1.55;
     }
 
+    .workflow-stack {
+        display: grid;
+        gap: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .workflow-step {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem 1.05rem;
+        box-shadow: var(--shadow);
+    }
+
+    .workflow-step-head {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .workflow-step-index {
+        width: 1.9rem;
+        height: 1.9rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 0.88rem;
+        font-weight: 700;
+        flex: 0 0 auto;
+    }
+
+    .workflow-step-title {
+        color: var(--ink);
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+        letter-spacing: 0;
+    }
+
+    .workflow-step-body {
+        color: var(--muted);
+        font-size: 0.94rem;
+        line-height: 1.68;
+    }
+
+    .workflow-step-body p {
+        margin: 0 0 0.75rem 0;
+    }
+
+    .workflow-step-body p:last-child {
+        margin-bottom: 0;
+    }
+
+    .workflow-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+    }
+
+    .workflow-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2rem;
+        padding: 0.32rem 0.7rem;
+        border-radius: 999px;
+        background: var(--surface-subtle);
+        border: 1px solid var(--border);
+        color: var(--ink);
+        font-size: 0.84rem;
+        line-height: 1.35;
+    }
+
+    .workflow-chip-strong {
+        background: var(--accent-soft);
+        border-color: #cfe0f5;
+        color: #274b73;
+    }
+
+    .workflow-list {
+        margin: 0;
+        padding-left: 1.1rem;
+        color: var(--muted);
+        line-height: 1.68;
+        font-size: 0.94rem;
+    }
+
+    .workflow-list li + li {
+        margin-top: 0.45rem;
+    }
+
+    .workflow-inline-note {
+        margin-top: 0.7rem;
+        padding: 0.78rem 0.85rem;
+        border-radius: 8px;
+        background: var(--surface-subtle);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.89rem;
+        line-height: 1.58;
+    }
+
     div[data-testid="stExpander"] {
         border: 1px solid var(--border);
         border-radius: 8px;
@@ -391,6 +469,139 @@ def get_memory_overview(memory_store: NetworkMemory, records: list) -> dict[str,
     }
 
 
+def severity_meta(severity: str | None) -> tuple[str, str]:
+    mapping = {
+        "high": ("高", "问题比较明确，建议优先处理当前链路或出口异常。"),
+        "medium": ("中", "已经看到可疑点，但还建议结合场景再复测一次。"),
+        "low": ("低", "这次快照没有看到明显异常，更像是偶发问题或场景问题。"),
+    }
+    return mapping.get((severity or "").lower(), ("未知", "当前证据不足，暂时只能给出保守判断。"))
+
+
+def build_check_chips(
+    snapshot,
+    monitor_summary,
+    react_observations,
+    rag_hits,
+    memory_records,
+) -> list[str]:
+    chips = ["本机网络信息"]
+    if snapshot.pings:
+        chips.append(f"Ping {len(snapshot.pings)} 项")
+    if snapshot.dns:
+        chips.append(f"DNS {len(snapshot.dns)} 项")
+    if snapshot.traces:
+        chips.append(f"路由追踪 {len(snapshot.traces)} 项")
+    if monitor_summary:
+        chips.append("短时监控")
+    if rag_hits:
+        chips.append(f"RAG 检索 {len(rag_hits)} 条")
+    if memory_records:
+        chips.append(f"历史记忆 {len(memory_records)} 条")
+    if react_observations:
+        chips.append(f"工具调用 {len(react_observations)} 步")
+    return chips
+
+
+def confidence_summary(
+    diagnosis,
+    monitor_summary,
+    rag_hits,
+    memory_records,
+    react_observations,
+) -> tuple[str, list[str]]:
+    evidence_count = len(diagnosis.evidence) if diagnosis else 0
+    completed_checks = len(react_observations)
+    notes = [
+        f"已形成 {evidence_count} 条直接证据",
+        f"本次实际执行 {completed_checks} 步工具调用" if completed_checks else "本次使用基础探测流程生成结果",
+    ]
+    score = 1 if diagnosis else 0
+    if evidence_count >= 4:
+        score += 1
+    if monitor_summary:
+        score += 1
+        notes.append("包含短时监控，能看到是否存在抖动或间歇性丢包")
+    else:
+        notes.append("没有短时监控，偶发抖动类问题可能还没被捕捉到")
+    if rag_hits:
+        score += 1
+        notes.append("结论参考了本地知识库，不只是模型自由发挥")
+    if memory_records:
+        score += 1
+        notes.append("召回了历史案例，可判断是不是反复出现的问题")
+
+    if score >= 4:
+        return "较高", notes
+    if score >= 2:
+        return "中等", notes
+    return "基础", notes
+
+
+def build_visible_evidence(snapshot, diagnosis, monitor_summary) -> list[str]:
+    if diagnosis and diagnosis.evidence:
+        return [item for item in diagnosis.evidence if item][:6]
+
+    fallback: list[str] = []
+    if snapshot.gateway:
+        fallback.append(f"当前默认网关是 {snapshot.gateway}。")
+
+    for name, item in list(snapshot.pings.items())[:3]:
+        fallback.append(
+            f"Ping {name}（{item.target}）：{'成功' if item.success else '失败'}，平均延迟 {item.avg_ms} ms，丢包 {item.packet_loss_percent}% 。"
+        )
+
+    for name, item in list(snapshot.dns.items())[:3]:
+        fallback.append(
+            f"DNS 解析 {name}：{'成功' if item.success else '失败'}，耗时 {item.elapsed_ms} ms。"
+        )
+
+    if monitor_summary and monitor_summary.conclusion:
+        fallback.append(monitor_summary.conclusion)
+
+    if diagnosis and diagnosis.summary:
+        fallback.append(f"规则诊断结论是：{diagnosis.summary}")
+
+    if not fallback:
+        fallback.append("这次没有拿到足够的结构化证据，建议重新诊断一次。")
+
+    return fallback[:6]
+
+
+def render_workflow_step(index: int, title: str, body: str, items: list[str] | None = None, chips: list[str] | None = None, note: str | None = None) -> str:
+    body_html = f"<p>{escape(body)}</p>" if body else ""
+    items_html = ""
+    if items:
+        item_list = "".join(f"<li>{escape(item)}</li>" for item in items if item)
+        if item_list:
+            items_html = f'<ul class="workflow-list">{item_list}</ul>'
+    chips_html = ""
+    if chips:
+        chip_list = "".join(
+            f'<span class="workflow-chip{" workflow-chip-strong" if idx == 0 else ""}">{escape(chip)}</span>'
+            for idx, chip in enumerate(chips)
+            if chip
+        )
+        if chip_list:
+            chips_html = f'<div class="workflow-chip-row">{chip_list}</div>'
+    note_html = f'<div class="workflow-inline-note">{escape(note)}</div>' if note else ""
+    parts = [
+        '<div class="workflow-step">',
+        '<div class="workflow-step-head">',
+        f'<div class="workflow-step-index">{index}</div>',
+        f'<h3 class="workflow-step-title">{escape(title)}</h3>',
+        "</div>",
+        '<div class="workflow-step-body">',
+        body_html,
+        items_html,
+        chips_html,
+        note_html,
+        "</div>",
+        "</div>",
+    ]
+    return "".join(part for part in parts if part)
+
+
 memory_store = NetworkMemory()
 persisted_memory_records = memory_store.load(limit=12)
 memory_overview = get_memory_overview(memory_store, persisted_memory_records)
@@ -398,16 +609,10 @@ memory_overview = get_memory_overview(memory_store, persisted_memory_records)
 st.markdown(
     """
     <div class="hero">
-      <div class="hero-row">
-        <div class="hero-copy">
-          <div class="eyebrow">本机网络诊断</div>
-          <h1>NetDiag Agent</h1>
-          <p>帮你判断网络问题更像出在哪一段，并告诉你下一步自己可以先做什么。默认先给结论和建议，需要时再展开 Agent 过程、工具轨迹、RAG 和记忆细节。</p>
-        </div>
-        <div class="hero-note">
-          <strong>当前工作方式</strong>
-          <span>检测发生在这台电脑和这条网络上，不是远程服务器模拟结果。你看到的是本机此刻的真实探测数据。</span>
-        </div>
+      <div class="hero-copy">
+        <div class="eyebrow">本机网络诊断</div>
+        <h1>NetDiag Agent</h1>
+        <p>帮你判断网络问题更像出在哪一段，并告诉你下一步自己可以先做什么。默认先给结论和建议，需要时再展开 Agent 过程、工具轨迹、RAG 和记忆细节。</p>
       </div>
     """,
     unsafe_allow_html=True,
@@ -557,6 +762,9 @@ if run:
         save_report(snapshot)
 
     st.session_state.snapshot = snapshot
+    st.session_state.last_user_context = user_context
+    st.session_state.last_custom_target = custom_target
+    st.session_state.last_mode_label = mode_label
     st.session_state.plan = active_plan
     st.session_state.tool_plan_result = tool_plan_result
     st.session_state.agent_trace = agent_trace
@@ -578,13 +786,15 @@ if snapshot:
     graph_steps = st.session_state.get("graph_steps", [])
     react_observations = st.session_state.get("react_observations", [])
     active_plan = st.session_state.get("plan") or plan
+    last_user_context = st.session_state.get("last_user_context", user_context)
+    last_custom_target = st.session_state.get("last_custom_target", custom_target)
     agent_trace = st.session_state.get("agent_trace") or build_agent_trace(
-        "", active_plan, snapshot, monitor_summary
+        last_user_context, active_plan, snapshot, monitor_summary
     )
 
     gateway_text = snapshot.gateway or "未识别"
     dns_text = ", ".join(snapshot.dns_servers[:2]) if snapshot.dns_servers else "未识别"
-    severity_text = diagnosis.severity if diagnosis else "unknown"
+    severity_text, _ = severity_meta(diagnosis.severity if diagnosis else None)
     target_text = str(len(snapshot.pings))
 
     st.markdown(
@@ -611,8 +821,8 @@ if snapshot:
         unsafe_allow_html=True,
     )
 
-    if custom_target:
-        st.caption(f"本次额外目标：{custom_target}")
+    if last_custom_target:
+        st.caption(f"本次额外目标：{last_custom_target}")
 
     st.markdown(
         f"""
@@ -624,15 +834,9 @@ if snapshot:
         unsafe_allow_html=True,
     )
 
-    if llm_report:
-        with st.expander("详细说明", expanded=True):
-            if llm_report.success:
-                st.markdown(llm_report.content)
-            else:
-                st.warning(f"DeepSeek 报告生成失败，已保留规则诊断结果：{llm_report.error}")
-
-    evidence_html = "".join(f"<li>{item}</li>" for item in diagnosis.evidence)
-    suggestion_html = "".join(f"<li>{item}</li>" for item in diagnosis.suggestions)
+    visible_evidence = build_visible_evidence(snapshot, diagnosis, monitor_summary)
+    evidence_html = "".join(f"<li>{escape(item)}</li>" for item in visible_evidence)
+    suggestion_html = "".join(f"<li>{escape(item)}</li>" for item in (diagnosis.suggestions[:6] if diagnosis else []))
     st.markdown(
         f"""
         <div class="detail-grid">
@@ -648,6 +852,13 @@ if snapshot:
         """,
         unsafe_allow_html=True,
     )
+
+    if llm_report:
+        with st.expander("模型补充说明", expanded=False):
+            if llm_report.success:
+                st.markdown(llm_report.content)
+            else:
+                st.warning(f"DeepSeek 报告生成失败，已保留规则诊断结果：{llm_report.error}")
 
     st.markdown('<div class="panel-title">原始探测数据</div>', unsafe_allow_html=True)
 
